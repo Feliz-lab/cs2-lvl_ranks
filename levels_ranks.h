@@ -14,9 +14,7 @@
 #include "utils.hpp"
 #include <utlstring.h>
 #include <KeyValues.h>
-#include "CCSPlayerController.h"
-#include "CGameRules.h"
-#include "module.h"
+#include "lr_entities.h"
 #include "include/mysql_mm.h"
 #include "include/lvl_ranks.h"
 #include "include/cookies.h"

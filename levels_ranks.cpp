@@ -378,7 +378,7 @@ void ClientPrint(int iSlot, const char *msg, ...)
 bool CheckStatus(int iSlot)
 {
 	CCSPlayerController* pPlayerController = CCSPlayerController::FromSlot(iSlot);
-	if (!pPlayerController || !pPlayerController->m_hPawn() || pPlayerController->m_steamID() <= 0)
+	if (!pPlayerController || !pPlayerController->HasPawn() || pPlayerController->m_steamID() <= 0)
 		return false;
 
 	return (engine->IsClientFullyAuthenticated(iSlot) && g_iPlayerInfo[iSlot].bInitialized) || (g_iPlayerInfo[iSlot].bInitialized = false);
@@ -477,7 +477,7 @@ void CheckAllowStatistic(bool bRoundStart = false)
 	for (int i = 0; i < 64; i++)
 	{
 		CCSPlayerController* pPlayerController = CCSPlayerController::FromSlot(i);
-		if (pPlayerController && pPlayerController->m_steamID() > 0 && pPlayerController->m_iTeamNum() > 1 && pPlayerController->m_hPawn() && pPlayerController->m_hPlayerPawn())
+		if (pPlayerController && pPlayerController->m_steamID() > 0 && pPlayerController->m_iTeamNum() > 1 && pPlayerController->HasPawn() && pPlayerController->HasPlayerPawn())
 		{
 			iPlayers++;
 		}
@@ -1427,7 +1427,7 @@ void OnRoundEvent(const char* sName, IGameEvent* event, bool bDontBroadcast)
 			for (int i = 0; i < 64; i++)
 			{
 				CCSPlayerController* pPlayerController = CCSPlayerController::FromSlot(i);
-				if (pPlayerController && pPlayerController->m_hPawn() && pPlayerController->m_steamID() > 0)
+				if (pPlayerController && pPlayerController->HasPawn() && pPlayerController->m_steamID() > 0)
 				{
 					if((iTeam = pPlayerController->m_iTeamNum()) > 1)
 					{
@@ -1440,7 +1440,7 @@ void OnRoundEvent(const char* sName, IGameEvent* event, bool bDontBroadcast)
 						}
 					}
 
-					if(pPlayerController->m_hPawn()->m_iHealth() > 0)
+					if(pPlayerController->GetPawn() && pPlayerController->GetPawn()->m_iHealth() > 0)
 					{
 						GiveExpForStreakKills(i);
 					}

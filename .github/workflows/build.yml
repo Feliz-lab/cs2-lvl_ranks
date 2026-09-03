@@ -34,22 +34,6 @@ jobs:
           ref: cs2
           path: hl2sdk/hl2sdk-cs2
 
-      # levels_ranks bundles pisex/SchemaEntity's schemasystem.cpp. That repo is
-      # unmaintained and still uses the pre-2025-08 name NetworkStateChanged_t;
-      # current hl2sdk-cs2 calls it NetworkStateChangedData. Patch it in place.
-      - name: Checkout SchemaEntity
-        uses: actions/checkout@v4
-        with:
-          repository: pisex/SchemaEntity
-          ref: main
-          path: SchemaEntity
-
-      - name: Patch SchemaEntity for current hl2sdk
-        run: |
-          cd SchemaEntity
-          sed -i 's/NetworkStateChanged_t/NetworkStateChangedData/g' schemasystem.cpp
-          grep -n 'NetworkStateChangedData' schemasystem.cpp || true
-
       - name: Configure
         working-directory: levels_ranks
         run: |
