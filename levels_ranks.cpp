@@ -38,6 +38,10 @@ int g_iBonus[10];
 int g_iDBCountPlayers = 0;
 bool g_bAllowStatistic;
 
+// Анти-спам для чат-команды !rank: кулдаун в секундах и время последнего использования по слотам.
+int g_iRankCmdCooldown = 10;
+time_t g_iRankCmdLastUse[64] = {0};
+
 IMySQLClient *g_pMysqlClient;
 IMySQLConnection* g_pConnection;
 
@@ -153,6 +157,8 @@ void LoadConfig()
 			g_Settings[LR_ShowResetMyStats] = pKVConfigMain->GetInt("lr_show_resetmystats", 1);
 
 			g_Settings[LR_ResetMyStatsCooldown] = pKVConfig->GetInt("lr_resetmystats_cooldown", 86400);
+
+			g_iRankCmdCooldown = pKVConfigMain->GetInt("lr_rank_cooldown", 10);
 
 			g_Settings[LR_ShowUsualMessage] = pKVConfigMain->GetInt("lr_show_usualmessage", 1);
 			g_Settings[LR_ShowSpawnMessage] = pKVConfigMain->GetInt("lr_show_spawnmessage", 1);
@@ -1249,6 +1255,7 @@ void LR::OnClientDisconnect( CPlayerSlot slot, ENetworkDisconnectionReason reaso
 {
 	int iSlot = slot.Get();
 	g_bAdminAccess[iSlot] = false;
+	if(iSlot >= 0 && iSlot < 64) g_iRankCmdLastUse[iSlot] = 0;
 	SaveDataPlayer(iSlot, true);
 }
 
@@ -1259,6 +1266,8 @@ void LR::OnClientPutInServer(CPlayerSlot slot, char const *pszName, int type, ui
 	g_iPlayerInfo[iSlot] = g_iInfoNULL;
 	if (iSlot == -1)
     	return;
+
+	if(iSlot >= 0 && iSlot < 64) g_iRankCmdLastUse[iSlot] = 0;
 
 	CCSPlayerController* pPlayerController = CCSPlayerController::FromSlot(iSlot);
 	if (!pPlayerController || pPlayerController->m_steamID() <= 0)
@@ -1817,6 +1826,28 @@ void LR::AllPluginsLoaded()
 	});
 
 	g_pUtils->RegCommand(g_PLID, {"mm_rank", "sm_rank"}, {"!rank", "rank", "!кфтл", "кфтл"}, [](int iSlot, const char* szContent){
+		if(g_iRankCmdCooldown > 0 && iSlot >= 0 && iSlot < 64)
+		{
+			time_t iNow = std::time(0);
+			time_t iLastUse = g_iRankCmdLastUse[iSlot];
+
+			if(iLastUse && iNow - iLastUse < g_iRankCmdCooldown)
+			{
+				int iRemain = (int)(g_iRankCmdCooldown - (iNow - iLastUse));
+				if(iRemain < 1) iRemain = 1;
+
+				auto itCooldown = g_vecPhrases.find("RankCooldown");
+				if(itCooldown != g_vecPhrases.end() && !itCooldown->second.empty())
+					ClientPrint(iSlot, itCooldown->second.c_str(), g_iRankCmdCooldown, iRemain);
+				else
+					ClientPrint(iSlot, "{LIGHTRED}!rank{WHITE} можно вводить раз в {OLIVE}%d{WHITE} сек. Подожди ещё {OLIVE}%d{WHITE} сек.", g_iRankCmdCooldown, iRemain);
+
+				return false;
+			}
+
+			g_iRankCmdLastUse[iSlot] = iNow;
+		}
+
 		int iKills = g_iPlayerInfo[iSlot].iStats[ST_KILLS],
 			iDeaths = g_iPlayerInfo[iSlot].iStats[ST_DEATHS];
 

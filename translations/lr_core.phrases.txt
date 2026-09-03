@@ -845,4 +845,16 @@
 		"de"		"Nein"
 		"pt"		"Não"
 	}
+
+	// Первый %d - полный кулдаун в секундах, второй %d - сколько секунд осталось ждать
+	"RankCooldown"
+	{
+		"en"		"{LIGHTRED}!rank {WHITE}can be used once every {OLIVE}%d {WHITE}sec. Wait {OLIVE}%d {WHITE}more sec."
+		"ru"		"{LIGHTRED}!rank {WHITE}можно вводить раз в {OLIVE}%d {WHITE}сек. Подожди ещё {OLIVE}%d {WHITE}сек."
+		"ua"		"{LIGHTRED}!rank {WHITE}можна вводити раз на {OLIVE}%d {WHITE}сек. Зачекай ще {OLIVE}%d {WHITE}сек."
+		"chi"		"{LIGHTRED}!rank {WHITE}每 {OLIVE}%d {WHITE}秒只能使用一次. 请再等 {OLIVE}%d {WHITE}秒."
+		"es"		"{LIGHTRED}!rank {WHITE}se puede usar una vez cada {OLIVE}%d {WHITE}seg. Espera {OLIVE}%d {WHITE}seg. mas."
+		"de"		"{LIGHTRED}!rank {WHITE}kann alle {OLIVE}%d {WHITE}Sek. einmal benutzt werden. Warte noch {OLIVE}%d {WHITE}Sek."
+		"pt"		"{LIGHTRED}!rank {WHITE}pode ser usado uma vez a cada {OLIVE}%d {WHITE}seg. Aguarde mais {OLIVE}%d {WHITE}seg."
+	}
 }
