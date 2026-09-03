@@ -53,11 +53,18 @@ jobs:
 
           mkdir -p external
           cd external
-          git clone --recursive --branch master --single-branch \
-            https://github.com/alliedmodders/metamod-source.git
-          git clone --recursive --branch cs2 --single-branch \
-            https://github.com/alliedmodders/hl2sdk.git hl2sdk-cs2
-            
+
+          # Pin external SDKs to the state around the cs2-lvl_ranks 1.2.4 release (2025-10-15).
+          # The moving alliedmodders/hl2sdk@cs2 branch later removed tier1/generichash.cpp
+          # (commit dc8e7324, 2026-07-17), which this plugin's AMBuildScript still compiles.
+          git clone --recursive https://github.com/alliedmodders/metamod-source.git
+          git -C metamod-source checkout 4399ff0fd4ad
+          git -C metamod-source submodule update --init --recursive
+
+          git clone --recursive https://github.com/alliedmodders/hl2sdk.git hl2sdk-cs2
+          git -C hl2sdk-cs2 checkout 84a823db042b
+          git -C hl2sdk-cs2 submodule update --init --recursive
+
           cd ../..
 
           git clone https://github.com/pisex/SchemaEntity.git
