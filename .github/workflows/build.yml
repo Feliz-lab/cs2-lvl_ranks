@@ -1,100 +1,81 @@
-name: Build AMBuild Plugin
+name: Build
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-  release:
-    types:
-      - created
+    paths-ignore:
+      - '**.md'
   workflow_dispatch:
 
 jobs:
   build:
-    if: "!contains(github.event.head_commit.message, '[skip ci]')"
-    permissions:
-      contents: write
+    name: Linux x86_64
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/pisex/ubuntu20:latest
-
-    env:
-      HL2SDK_ROOT: "${{ github.workspace }}/external"
-      MMS_PATH: "${{ github.workspace }}/external/metamod-source"
-      MANIFEST_PATH: "${{ github.workspace }}/external/metamod-source/hl2sdk-manifests"
-
+      image: ghcr.io/alliedmodders/build-containers/debian11-clang22:latest
     steps:
-      - name: Generate build number
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-        id: buildnumber
-        uses: onyxmueller/build-tag-number@v1
+      - name: Checkout plugin
+        uses: actions/checkout@v4
         with:
-          token: ${{secrets.github_token}}
+          path: levels_ranks
 
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout Metamod:Source
+        uses: actions/checkout@v4
+        with:
+          repository: alliedmodders/metamod-source
+          ref: master
+          path: mmsource
+          submodules: recursive
 
-      - name: Set up dependencies
+      # Latest hl2sdk-cs2 == what a SteamCMD-updated live CS2 server actually runs.
+      - name: Checkout HL2SDK (cs2)
+        uses: actions/checkout@v4
+        with:
+          repository: alliedmodders/hl2sdk
+          ref: cs2
+          path: hl2sdk/hl2sdk-cs2
+
+      # levels_ranks bundles pisex/SchemaEntity's schemasystem.cpp. That repo is
+      # unmaintained and still uses the pre-2025-08 name NetworkStateChanged_t;
+      # current hl2sdk-cs2 calls it NetworkStateChangedData. Patch it in place.
+      - name: Checkout SchemaEntity
+        uses: actions/checkout@v4
+        with:
+          repository: pisex/SchemaEntity
+          ref: main
+          path: SchemaEntity
+
+      - name: Patch SchemaEntity for current hl2sdk
         run: |
-          export DEBIAN_FRONTEND=noninteractive
-          apt-get update -qy
-          apt-get install -y git clang-10 clang++-10 binutils python3 python3-pip zip
+          cd SchemaEntity
+          sed -i 's/NetworkStateChanged_t/NetworkStateChangedData/g' schemasystem.cpp
+          grep -n 'NetworkStateChangedData' schemasystem.cpp || true
 
-          python3 -m pip install --upgrade pip importlib-metadata
-          python3 -m pip install setuptools==45.2.0
-
-          git clone https://github.com/alliedmodders/ambuild.git ambuild
-          cd ambuild
-          pip3 install .
-          cd ..
-
-          mkdir -p external
-          cd external
-
-          # Pin every external dep to its ~2025-05-09 state (cs2-lvl_ranks 1.2.3 was
-          # tagged 2025-05-12). Newer alliedmodders/hl2sdk@cs2 both removed
-          # tier1/generichash.cpp (dc8e7324, 2026-07-17) and reworked
-          # NetworkStateChanged_t -> NetworkStateChangedData (from 2025-08), neither of
-          # which pisex/SchemaEntity's pinned commit expects.
-          git clone --recursive https://github.com/alliedmodders/metamod-source.git
-          git -C metamod-source checkout ace94a97d137
-          git -C metamod-source submodule update --init --recursive
-
-          git clone --recursive https://github.com/alliedmodders/hl2sdk.git hl2sdk-cs2
-          git -C hl2sdk-cs2 checkout 5358380f4c43
-          git -C hl2sdk-cs2 submodule update --init --recursive
-
-          cd ../..
-
-          git clone https://github.com/pisex/SchemaEntity.git
-          git -C SchemaEntity checkout b7a6cf2badaa
-          
-      - name: Configure and build plugin
+      - name: Configure
+        working-directory: levels_ranks
         run: |
           mkdir build
           cd build
-          python3 ../configure.py -s cs2 --targets x86_64 --enable-optimize --hl2sdk-manifests=./hl2sdk-manifests --mms_path=$MMS_PATH --hl2sdk-root=$HL2SDK_ROOT
-          ambuild
+          python3 ../configure.py \
+            --enable-optimize \
+            --sdks=cs2 \
+            --targets=x86_64 \
+            --mms_path="$GITHUB_WORKSPACE/mmsource" \
+            --hl2sdk-manifests="$GITHUB_WORKSPACE/levels_ranks/hl2sdk-manifests" \
+            --hl2sdk-root="$GITHUB_WORKSPACE/hl2sdk"
 
-      - name: Package addon into ZIP
-        run: |
-          cd build/package/addons
-          zip -r "${{ github.event.repository.name }}.zip" .
-          mv "${{ github.event.repository.name }}.zip" "${GITHUB_WORKSPACE}/"
+      - name: Build
+        working-directory: levels_ranks/build
+        run: ambuild
 
-      - name: Upload build artifact
+      # A .so may keep symbols unresolved for dynamic resolution against the CS2
+      # server at dlopen() time, but an unexpected one there means a load failure
+      # on the live server (this bit us with g_bUpdateStringTokenDatabase).
+      - name: List undefined symbols
+        working-directory: levels_ranks/build/package/addons/levels_ranks
+        run: nm -D --undefined-only levels_ranks.so | c++filt
+
+      - name: Upload build
         uses: actions/upload-artifact@v4
         with:
-          name: cs2-lvl_ranks-addons
-          path: build/package/addons/**
-
-      - name: Create GitHub Release
-        if: ${{ github.event_name == 'release' }}
-        continue-on-error: true
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ github.event.head_commit.message }}
-          files: ${{ github.workspace }}/${{ github.event.repository.name }}.zip
+          name: levels_ranks-linux-x86_64
+          path: levels_ranks/build/package
