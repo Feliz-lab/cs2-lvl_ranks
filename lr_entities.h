@@ -9,6 +9,12 @@
 #include <cstdint>
 #include "schema.h"
 
+// include/menus.h references these in OnTakeDamage* typedefs (previously
+// completed by SchemaEntity's ctakedamageinfo.h). levels_ranks never uses the
+// take-damage hooks, so forward declarations are enough.
+class CTakeDamageInfo;
+class CTakeDamageInfoContainer;
+
 // GameEntitySystem() is declared by <entity2/entitysystem.h> (pulled in via
 // schema.h) and defined in levels_ranks.cpp.
 

@@ -1359,9 +1359,9 @@ void GiveExpForStreakKills(int iSlot)
 void OnOtherEvents(const char* sName, IGameEvent* event, bool bDontBroadcast)
 {
 	int iSlot = event->GetInt("userid");
-	if(iSlot < 64)
+	if(iSlot >= 0 && iSlot < 64)
 	{
-		CBasePlayerController* pPlayerController = static_cast<CBasePlayerController*>(event->GetPlayerController("userid"));
+		CCSPlayerController* pPlayerController = CCSPlayerController::FromSlot(iSlot);
 		if (pPlayerController)
 		{
 			if(g_bAllowStatistic)
