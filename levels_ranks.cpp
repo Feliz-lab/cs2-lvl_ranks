@@ -1994,7 +1994,7 @@ const char* LR::GetLicense()
 
 const char* LR::GetVersion()
 {
-	return "1.2.3";
+	return "1.2.4-rankcd";
 }
 
 const char* LR::GetDate()
