@@ -54,15 +54,19 @@ jobs:
           mkdir -p external
           cd external
 
-          # Pin external SDKs to the state around the cs2-lvl_ranks 1.2.4 release (2025-10-15).
-          # The moving alliedmodders/hl2sdk@cs2 branch later removed tier1/generichash.cpp
-          # (commit dc8e7324, 2026-07-17), which this plugin's AMBuildScript still compiles.
+          # Pin external SDKs to a mutually consistent pre-2025-08-07 state:
+          #  * hl2sdk@cs2 later removed tier1/generichash.cpp (dc8e7324, 2026-07-17),
+          #    which this plugin's AMBuildScript still compiles.
+          #  * hl2sdk@cs2 renamed NetworkStateChanged_t -> NetworkStateChangedData
+          #    (510a1e4e, 2025-08-07); pisex/SchemaEntity still uses the old name.
+          # d03fadc6 (2025-08-06) is the last cs2 commit before that rename and still
+          # has generichash.cpp. metamod-source 5a282eb8 is the matching master state.
           git clone --recursive https://github.com/alliedmodders/metamod-source.git
-          git -C metamod-source checkout 4399ff0fd4ad
+          git -C metamod-source checkout 5a282eb8fca9
           git -C metamod-source submodule update --init --recursive
 
           git clone --recursive https://github.com/alliedmodders/hl2sdk.git hl2sdk-cs2
-          git -C hl2sdk-cs2 checkout 84a823db042b
+          git -C hl2sdk-cs2 checkout d03fadc6df75
           git -C hl2sdk-cs2 submodule update --init --recursive
 
           cd ../..
